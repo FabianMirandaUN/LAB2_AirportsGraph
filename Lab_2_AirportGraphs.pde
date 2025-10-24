@@ -300,7 +300,7 @@ void drawOverlay() {
       + "- S: Escribir código ORIGEN\n"
       + "- T: Escribir código DESTINO\n"
       + "- D: Camino mínimo y Top 10 más largos\n"
-      + "- : Top 10 más caminos más largos\n"
+      + "- O: Top 10 más caminos más largos\n"
       + "- C: Conectividad y componentes\n"
       + "- M: Peso MST por componente\n"
       + "- H: Mostrar/ocultar ayuda\n";
