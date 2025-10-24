@@ -126,9 +126,10 @@ void draw() {
       }
     }
   }
-  drawCalibrationOverlay();
-
-  drawOverlay();
+  
+  if (showHelp){
+  drawOverlay() ;
+  }
 }
 
 
@@ -172,6 +173,7 @@ void mouseClicked() {
 void keyPressed() {
   if (key == 'h') {
     showHelp = !showHelp;
+    
     return;
   }
   if (key == 'l') {
