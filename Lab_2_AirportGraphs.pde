@@ -1,10 +1,4 @@
-// Processing sketch: Air Routes Graph with Interactive Map, MST and Shortest Paths
-// Place flights_final.csv in data/ folder with columns:
-// Source Airport Code, Source Airport Name, Source Airport City, Source Airport Country,
-// Source Airport Latitude, Source Airport Longitude,
-// Destination Airport Code, Destination Airport Name, Destination Airport City, Destination Airport Country,
-// Destination Airport Latitude, Destination Airport Longitude
-import java.util.*;   // esto incluye Map, HashMap, ArrayList, etc.
+import java.util.*;
 PImage worldMap;
 // --- Global state ---
 Graph graph = new Graph();
@@ -358,11 +352,11 @@ void loadCsvDefault() {
 // --- Actions ---
 void showComponents() {
   if (!dataLoaded) {
-    infoText = "Carga el CSV primero (L).";
+    infoText = "Carga el CSV primero (L)."; 
     return;
   }
-  lastComponents = Algorithms.connectedComponents(graph);
-  StringBuilder sb = new StringBuilder();
+  lastComponents = Algorithms.connectedComponents(graph); //Se halla la cantidad de componentes
+  StringBuilder sb = new StringBuilder(); //Para imprimir la informacion de si es conexo y los componete
   sb.append("¿Conexo? ").append(lastComponents.size() == 1 ? "Sí" : "No").append("\n");
   sb.append("Número de componentes: ").append(lastComponents.size()).append("\n");
   for (int i = 0; i < lastComponents.size(); i++) {
@@ -413,27 +407,27 @@ void top10() {
   infoText = sb.toString();
 }
 void top10Individual(String node, StringBuilder sb) {
-  // Top 10 longest shortest paths from source
-  lastSP = ShortestPaths.dijkstra(graph, node);
-  ArrayList<Map.Entry<String, Double>> entries = new ArrayList<>();
-  for (String code : lastSP.dist.keySet()) {
-    double d = lastSP.dist.get(code);
-    if (!Double.isInfinite(d)) {
-      entries.add(new AbstractMap.SimpleEntry<String, Double>(code, d));
+  // Top 10 caminos mas largos
+  lastSP = ShortestPaths.dijkstra(graph, node); //Se realiza dijkstra el nodo enviado
+  ArrayList<Map.Entry<String, Double>> entries = new ArrayList<>(); //Se declara una lista con un diccionario del destino y distancia
+  for (String code : lastSP.dist.keySet()) { //Se recorren todos los codigos destino del camino minimo generdo
+    double d = lastSP.dist.get(code); //Se guarda el valor de distancia
+    if (!Double.isInfinite(d)) { //Si la distancia es diferente de infinito se tiene en cuenta
+      entries.add(new AbstractMap.SimpleEntry<String, Double>(code, d)); //Se agrega a la lista de diccionario los destinos que no sean infinitos
     }
   }
-  entries.sort(new Comparator<Map.Entry<String, Double>>() {
+  entries.sort(new Comparator<Map.Entry<String, Double>>() { //Se ordena de mayor a menor
     public int compare(Map.Entry<String, Double> a, Map.Entry<String, Double> b) {
       return Double.compare(b.getValue(), a.getValue());
     }
   }
   );
-  int limit = min(10, entries.size());
+  int limit = min(10, entries.size()); //Se verifica si los caminos diferentes de infinito son más de 10 o menos de 10
   sb.append("\n\nDesde").append(node).append(":\n\n");
-  for (int i = 0; i < limit; i++) {
-    Map.Entry<String, Double> e = entries.get(i);
+  for (int i = 0; i < limit; i++) { //Se muestra la información del top 10
+    Map.Entry<String, Double> e = entries.get(i); 
     Airport a = graph.getAirport(e.getKey());
-    sb.append(airportInline(a))
+    sb.append(airportFullInfo(a))
       .append(" | ")
       .append(String.format("%.2f", e.getValue()))
       .append(" km\n");
@@ -445,14 +439,14 @@ void showMSTWeights() {
     infoText = "Carga el CSV primero (L).";
     return;
   }
-  if (lastComponents == null) lastComponents = Algorithms.connectedComponents(graph);
-  lastMSTResults = new ArrayList<>();
+  if (lastComponents == null) lastComponents = Algorithms.connectedComponents(graph); //Se verifica que ya se tengan calculados los componentes
+  lastMSTResults = new ArrayList<>(); //Se declara una lista para la expansion minima de cada componente
   StringBuilder sb = new StringBuilder();
   sb.append("Pesos de MST por componente:\n");
-  for (int i = 0; i < lastComponents.size(); i++) {
-    Algorithms.Component comp = lastComponents.get(i);
-    MST.MSTResult r = MST.kruskal(graph, comp.nodes);
-    lastMSTResults.add(new MSTCompResult(i+1, comp.nodes.size(), r.totalWeight));
+  for (int i = 0; i < lastComponents.size(); i++) { //Se recorre cada componente
+    Algorithms.Component comp = lastComponents.get(i); //Se obtiene el componente i
+    MST.MSTResult r = MST.kruskal(graph, comp.nodes); //Se ejecuta el algoritmo de kruskal que retorna un objeto con el peso y las aristas
+    lastMSTResults.add(new MSTCompResult(i+1, comp.nodes.size(), r.totalWeight)); // Se agrega el arbol de expansion a la lista de árboles de expansión
     sb.append("Componente ").append(i+1)
       .append(" (|V|=").append(comp.nodes.size()).append("): ")
       .append(nf((float)r.totalWeight, 0, 2)).append(" km\n");
@@ -473,8 +467,8 @@ void computeShortestPath() {
     infoText = "Código inválido en origen/destino.";
     return;
   }
-  lastSP = ShortestPaths.dijkstra(graph, selectedSource);
-  currentPath = ShortestPaths.reconstructPath(lastSP, selectedSource, selectedTarget);
+  lastSP = ShortestPaths.dijkstra(graph, selectedSource); //Se hallan el camino minimo de la fuente
+  currentPath = ShortestPaths.reconstructPath(lastSP, selectedSource, selectedTarget); //Se reconstruye el camino
 
   StringBuilder sb = new StringBuilder();
   Airport src = graph.getAirport(selectedSource);
@@ -649,6 +643,9 @@ class Graph {
 
   void addUndirectedEdge(String u, String v, double w) {
     if (!vertices.containsKey(u) || !vertices.containsKey(v) || u.equals(v)) return;
+    for(Edge e: adj.get(u)){
+      if(e.to.equals(v)) return;
+    }
     adj.get(u).add(new Edge(v, w));
     adj.get(v).add(new Edge(u, w));
     String a = (u.compareTo(v) <= 0) ? u : v;
@@ -676,28 +673,28 @@ static class Algorithms {
   }
 
   static ArrayList<Component> connectedComponents(Graph g) {
-    java.util.HashSet<String> visited = new java.util.HashSet<String>();
-    ArrayList<Component> comps = new ArrayList<Component>();
-    for (String code : g.getCodes()) {
+    java.util.HashSet<String> visited = new java.util.HashSet<String>(); //Visitados
+    ArrayList<Component> comps = new ArrayList<Component>(); //Lista de componentes
+    for (String code : g.getCodes()) { //Se recorren todos los códigos del grado para verificar si fue visitado.
       if (!visited.contains(code)) {
-        Component c = new Component();
-        java.util.ArrayDeque<String> stack = new java.util.ArrayDeque<String>();
-        stack.push(code);
+        Component c = new Component(); //Se crea un componente
+        java.util.ArrayDeque<String> stack = new java.util.ArrayDeque<String>(); //Pila Para el recorrido
+        stack.push(code); 
         visited.add(code);
-        while (!stack.isEmpty()) {
+        while (!stack.isEmpty()) { //Recorrido DFS
           String u = stack.pop();
-          c.nodes.add(u);
-          for (Graph.Edge e : g.neighbors(u)) {
-            if (!visited.contains(e.to)) {
-              visited.add(e.to);
-              stack.push(e.to);
+          c.nodes.add(u); //Se agrega al componente el nodo actual
+          for (Graph.Edge e : g.neighbors(u)) { //Se recorren las aristas del nodo actual
+            if (!visited.contains(e.to)) { //Se verifica que el vértice destino ya fue visitado
+              visited.add(e.to); //Se agrega el vertice a visitados
+              stack.push(e.to); //Se agrega a la pila
             }
           }
         }
-        comps.add(c);
+        comps.add(c); //Al terminar se agrega el componente
       }
     }
-    return comps;
+    return comps; //Se retorna el componente
   }
 }
 
@@ -739,87 +736,87 @@ static class MST {
     }
   }
 
-  static MSTResult kruskal(Graph g, java.util.Set<String> componentNodes) {
-    ArrayList<Graph.UndirectedEdge> candidate = new ArrayList<Graph.UndirectedEdge>();
-    java.util.HashSet<String> set = new java.util.HashSet<String>(componentNodes);
-    for (Graph.UndirectedEdge e : g.getEdges()) {
+  static MSTResult kruskal(Graph g, java.util.Set<String> componentNodes) { //Se lleva el grafo y los nodos del componente
+    ArrayList<Graph.UndirectedEdge> candidate = new ArrayList<Graph.UndirectedEdge>(); //Se declara la lista de las aristas para guardar las pertenecientes al componente
+    java.util.HashSet<String> set = new java.util.HashSet<String>(componentNodes);//Se hace un conjunto con los nodos del componentes
+    for (Graph.UndirectedEdge e : g.getEdges()) { //Se recorren las aristas del grafo para guardar solo las pertenecientes al componente
       if (set.contains(e.u) && set.contains(e.v)) candidate.add(e);
     }
-    candidate.sort(new java.util.Comparator<Graph.UndirectedEdge>() {
+    candidate.sort(new java.util.Comparator<Graph.UndirectedEdge>() { //Se ordenan de mayor a menor
       public int compare(Graph.UndirectedEdge a, Graph.UndirectedEdge b) {
         return Double.compare(a.weight, b.weight);
       }
     }
     );
 
-    DSU dsu = new DSU(componentNodes);
-    ArrayList<Graph.UndirectedEdge> mstEdges = new ArrayList<Graph.UndirectedEdge>();
-    double total = 0.0;
+    DSU dsu = new DSU(componentNodes); //Se usa un conjunto disjunto para evitar ciclos
+    ArrayList<Graph.UndirectedEdge> mstEdges = new ArrayList<Graph.UndirectedEdge>(); //Lista para guardar las aristas del árbol de expansión minima
+    double total = 0.0; //Se inicializa el peso total en 0
 
-    for (Graph.UndirectedEdge e : candidate) {
-      if (dsu.union(e.u, e.v)) {
-        mstEdges.add(e);
-        total += e.weight;
-        if (mstEdges.size() == componentNodes.size() - 1) break;
+    for (Graph.UndirectedEdge e : candidate) { //Se recorren todas las aristas candidatos
+      if (dsu.union(e.u, e.v)) { //Se verifica que el origen y destino no pertenezcan al mismo conjunto
+        mstEdges.add(e); //Se agrega la arista al árbol
+        total += e.weight; //Se suma el peso de esa arista al total
+        if (mstEdges.size() == componentNodes.size() - 1) break; //La construcción del arbol termina cuando la cantidad de aristas sea equivalente a los nodos - 1
       }
     }
-    return new MSTResult(total, mstEdges);
+    return new MSTResult(total, mstEdges); //Se retorna el árbol
   }
 }
 
 static class ShortestPaths {
-  static class PathResult {
+  static class PathResult { // El resultado tendrá dos diccionarios para la distancias y los anteriores
     java.util.HashMap<String, Double> dist = new java.util.HashMap<String, Double>();
     java.util.HashMap<String, String> prev = new java.util.HashMap<String, String>();
   }
 
-  static PathResult dijkstra(Graph g, String source) {
-    PathResult res = new PathResult();
-    for (String code : g.getCodes()) {
-      res.dist.put(code, Double.POSITIVE_INFINITY);
-      res.prev.put(code, null);
+  static PathResult dijkstra(Graph g, String source) { 
+    PathResult res = new PathResult(); //Se crea un objeto PathResult
+    for (String code : g.getCodes()) { //Se recorren todos los código para inicializar los diccionarios
+      res.dist.put(code, Double.POSITIVE_INFINITY); //Código/distancia inicialmente infinito
+      res.prev.put(code, null);//Código/Anterior inicialmente sin anterior nulo
     }
-    res.dist.put(source, Double.valueOf(0.0));
+    res.dist.put(source, Double.valueOf(0.0)); //Se inicializa la distancia para el origen hacia si mismo 0
 
 
-    java.util.PriorityQueue<String> pq = new java.util.PriorityQueue<String>(
+    java.util.PriorityQueue<String> pq = new java.util.PriorityQueue<String>( //Se usa una cola de prioridad
       11, new java.util.Comparator<String>() {
       public int compare(String a, String b) {
-        return Double.compare(res.dist.get(a), res.dist.get(b));
+        return Double.compare(res.dist.get(a), res.dist.get(b)); //Prioriza el nodo con menor distancia(Ordena descendentemente)
       }
     }
     );
-    pq.add(source);
-    java.util.HashSet<String> visited = new java.util.HashSet<String>();
+    pq.add(source);//Inicialmente a la cola se agrega la funente
+    java.util.HashSet<String> visited = new java.util.HashSet<String>();//HashSet para controlar visitados
 
-    while (!pq.isEmpty()) {
-      String u = pq.poll();
-      if (visited.contains(u)) continue;
-      visited.add(u);
+    while (!pq.isEmpty()) { //Mientras que la cola no esté vacía
+      String u = pq.poll(); //Se saca el elemento de la cola de prioridad
+      if (visited.contains(u)) continue; //Si visitado ya contiene el vértice actual ignora la instrucción y va directo al ciclo for
+      visited.add(u); //Agrega a visitados el nodo actual
 
-      for (Graph.Edge e : g.neighbors(u)) {
-        String v = e.to;
-        double alt = res.dist.get(u) + e.weight;
-        if (alt < res.dist.get(v)) {
-          res.dist.put(v, alt);
-          res.prev.put(v, u);
-          pq.add(v);
+      for (Graph.Edge e : g.neighbors(u)) { //Se recorren todas la aristas del nodo actual
+        String v = e.to; //Se asigna el destino
+        double alt = res.dist.get(u) + e.weight; //Se asigna la disancia como la distancia del predecesor como el peso actual
+        if (alt < res.dist.get(v)) { //Se revisa si la nueva distancia es más corta que la actual del diccionario
+          res.dist.put(v, alt); //Se agrega al diccionario de distancia el destino y la nueva distancia
+          res.prev.put(v, u); //Se agrega al diccionario de predescesor el destino y su padre(nodo actual)
+          pq.add(v); //Se agrega el destino a la cola
         }
       }
     }
-    return res;
+    return res; //Se retorna el pathresult, clase con los dos diccionarios
   }
 
   static ArrayList<String> reconstructPath(PathResult r, String source, String target) {
-    ArrayList<String> path = new ArrayList<String>();
-    if (!r.dist.containsKey(target) || Double.isInfinite(r.dist.get(target))) return path;
-    String cur = target;
-    while (cur != null) {
-      path.add(cur);
-      if (cur.equals(source)) break;
-      cur = r.prev.get(cur);
+    ArrayList<String> path = new ArrayList<String>(); //Se declara una lista para cada vertice del camino
+    if (!r.dist.containsKey(target) || Double.isInfinite(r.dist.get(target))) return path;//Si no contiene al destino se retorna vacía
+    String cur = target; //Se comienza del final
+    while (cur != null) { //Mientras que sea diferente de nulo
+      path.add(cur); //Se agrega el código al camino
+      if (cur.equals(source)) break; //Si equivale a la fuente termina el ciclo
+      cur = r.prev.get(cur); //Se va al previo
     }
-    java.util.Collections.reverse(path);
+    java.util.Collections.reverse(path); //Como se inicio de destino a fuente, se invierte el orden del camino para que sea de fuente a destino
     return path;
   }
 }
