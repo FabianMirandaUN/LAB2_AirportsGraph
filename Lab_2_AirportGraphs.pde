@@ -60,7 +60,7 @@ void setup() {
 
 // --- Draw loop ---
 void draw() {
-  background(255);
+  background(247, 255, 253);
 
   // Dibuja mapa con el mismo zoom/pan que el grafo
   if (worldMap != null) {
@@ -210,7 +210,7 @@ void keyPressed() {
     top10();
     return;
   }
- 
+
   if (key == ENTER || key == RETURN) {
     if (typingSource) {
       selectedSource = bufferSource.trim();
@@ -300,7 +300,7 @@ void drawOverlay() {
       + "- S: Escribir código ORIGEN\n"
       + "- T: Escribir código DESTINO\n"
       + "- D: Camino mínimo y Top 10 más largos\n"
-      + "- : Top 10 más caminos más largos\n"
+      + "- O: Top 10 más caminos más largos\n"
       + "- C: Conectividad y componentes\n"
       + "- M: Peso MST por componente\n"
       + "- H: Mostrar/ocultar ayuda\n";
@@ -377,11 +377,19 @@ void showInfo() {
 
   if (selectedSource != null) {
     currentPath.clear();
-    infoText = "Origen seleccionado: " + airportFullInfo(graph.getAirport(selectedSource));
+    if (graph.getAirport(selectedSource) != null) {
+      infoText = "Origen seleccionado: " + airportFullInfo(graph.getAirport(selectedSource));
+    } else {
+      infoText = "Seleccione/Ingrese un origen válido";
+    }
   }
   if (selectedTarget != null) {
     currentPath.clear();
-    infoText += "\nDestino seleccionado: " + airportFullInfo(graph.getAirport(selectedTarget));
+    if (graph.getAirport(selectedTarget) != null) {
+      infoText += "\nDestino seleccionado: " + airportFullInfo(graph.getAirport(selectedTarget));
+    } else {
+      infoText += "\nSeleccione/Ingrese un destino válido";
+    }
   }
 }
 void top10() {
@@ -402,7 +410,8 @@ void top10() {
   }
   infoText = sb.toString();
 }
-void top10Individual(String node, StringBuilder sb){
+void top10Individual(String node, StringBuilder sb) {
+  // Top 10 longest shortest paths from source
   lastSP = ShortestPaths.dijkstra(graph, node);
   ArrayList<Map.Entry<String, Double>> entries = new ArrayList<>();
   for (String code : lastSP.dist.keySet()) {
@@ -427,7 +436,7 @@ void top10Individual(String node, StringBuilder sb){
       .append(String.format("%.2f", e.getValue()))
       .append(" km\n");
   }
-  sb.append("\n"); 
+  sb.append("\n");
 }
 void showMSTWeights() {
   if (!dataLoaded) {
@@ -468,32 +477,6 @@ void computeShortestPath() {
   StringBuilder sb = new StringBuilder();
   Airport src = graph.getAirport(selectedSource);
   sb.append("Origen:\n").append(airportFullInfo(src)).append("\n\n");
-
-  // Top 10 longest shortest paths from source
-  ArrayList<Map.Entry<String, Double>> entries = new ArrayList<>();
-  for (String code : lastSP.dist.keySet()) {
-    double d = lastSP.dist.get(code);
-    if (!Double.isInfinite(d)) {
-      entries.add(new AbstractMap.SimpleEntry<String, Double>(code, d));
-    }
-  }
-  entries.sort(new Comparator<Map.Entry<String, Double>>() {
-    public int compare(Map.Entry<String, Double> a, Map.Entry<String, Double> b) {
-      return Double.compare(b.getValue(), a.getValue());
-    }
-  }
-  );
-  int limit = min(10, entries.size());
-  sb.append("Top 10 caminos mínimos más largos desde ").append(selectedSource).append(":\n");
-  for (int i = 0; i < limit; i++) {
-    Map.Entry<String, Double> e = entries.get(i);
-    Airport a = graph.getAirport(e.getKey());
-    sb.append(airportInline(a))
-      .append(" | ")
-      .append(String.format("%.2f", e.getValue()))
-      .append(" km\n");
-  }
-  sb.append("\n");
 
   // Path to target
   if (currentPath.isEmpty() || !currentPath.get(0).equals(selectedSource) || !currentPath.get(currentPath.size()-1).equals(selectedTarget)) {
